@@ -27,8 +27,6 @@ jobs:
             -scheme ${{ env.SCHEME }} \
             -configuration Release \
             -derivedDataPath build \
-            -arch arm64 \
-            -arch x86_64 \
             build
 
       - name: Locate .app
