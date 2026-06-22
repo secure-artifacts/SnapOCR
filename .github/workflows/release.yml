@@ -6,8 +6,7 @@ on:
       - "v*"
 
 env:
-  APP_NAME: SnapOCR
-  SCHEME: SnapOCR
+  APP_NAME: "SnapOCR"
 
 permissions:
   contents: write
@@ -24,15 +23,16 @@ jobs:
       - name: Build Universal Binary
         run: |
           xcodebuild \
-            -scheme ${{ env.SCHEME }} \
+            -project "${{ env.APP_NAME }}.xcodeproj" \
+            -target "SnapOCR" \
             -configuration Release \
-            -derivedDataPath build \
+            CONFIGURATION_BUILD_DIR="$PWD/build" \
             build
 
       - name: Locate .app
         id: app
         run: |
-          APP_PATH=$(find build/Build/Products -name "${{ env.APP_NAME }}.app" | head -n 1)
+          APP_PATH="build/SnapOCR.app"
           echo "APP_PATH=$APP_PATH"
           echo "app_path=$APP_PATH" >> $GITHUB_OUTPUT
 
@@ -42,20 +42,21 @@ jobs:
           cp -R "${{ steps.app.outputs.app_path }}" dist/
 
       - name: Zip
+        id: zip
         run: |
           ZIP_NAME="${{ env.APP_NAME }}-${{ github.ref_name }}-macos-universal.zip"
-          echo "ZIP_NAME=$ZIP_NAME"
           cd dist
           zip -r "../$ZIP_NAME" .
+          echo "zip_path=./$ZIP_NAME" >> $GITHUB_OUTPUT
 
       - name: Attestation
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: ./${{ env.APP_NAME }}-${{ github.ref_name }}-macos-universal.zip
+          subject-path: ${{ steps.zip.outputs.zip_path }}
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.APP_NAME }}-${{ github.ref_name }}-macos-universal.zip
+          files: ${{ steps.zip.outputs.zip_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
